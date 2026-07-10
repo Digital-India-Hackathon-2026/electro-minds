@@ -113,6 +113,17 @@ const API = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ customer_id: "cust-101", location, lat, lng })
         });
+    },
+    async submitCitizenReport(location, lat, lng, file) {
+        const formData = new FormData();
+        formData.append("location", location);
+        formData.append("lat", lat);
+        formData.append("lng", lng);
+        formData.append("image", file);
+        return await this.request('/api/citizen-report', {
+            method: 'POST',
+            body: formData
+        });
     }
 };
 
@@ -408,6 +419,18 @@ const App = {
         }).addTo(state.map);
 
         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
+
+        // General map double click coordinate copy for citizen reporting
+        state.map.on('dblclick', (e) => {
+            if (state.userRole !== 'customer') {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                document.getElementById('citizenLat').value = lat.toFixed(4);
+                document.getElementById('citizenLng').value = lng.toFixed(4);
+                document.getElementById('citizenLocation').focus();
+                App.notify(`✔ Coordinates copied: [${lat.toFixed(4)}, ${lng.toFixed(4)}]. Attach a photo and submit report!`);
+            }
+        });
     },
 
     updateMapElements() {
@@ -1398,5 +1421,65 @@ const Tour = {
     }
 };
 
+// ============================================================
+// CITIZEN CROWDSOURCED REPORT MODULE
+// ============================================================
+const CitizenReporter = {
+    init() {
+        const fileField = document.getElementById('citizenFileField');
+        if (fileField) {
+            fileField.addEventListener('change', (e) => {
+                const name = e.target.files[0] ? e.target.files[0].name : "No file chosen";
+                document.getElementById('citizenFileNamePreview').textContent = name;
+            });
+        }
+
+        const form = document.getElementById('citizenReportForm');
+        if (form) {
+            form.addEventListener('submit', (e) => this.submitReport(e));
+        }
+    },
+
+    async submitReport(e) {
+        e.preventDefault();
+        
+        const loc = document.getElementById('citizenLocation').value.trim();
+        const lat = document.getElementById('citizenLat').value;
+        const lng = document.getElementById('citizenLng').value;
+        const fileField = document.getElementById('citizenFileField');
+        
+        if (!loc || !lat || !lng) {
+            App.notify("⚠️ Coordinates and location description are required.");
+            return;
+        }
+        if (fileField.files.length === 0) {
+            App.notify("⚠️ Please attach a photo of the litter heap.");
+            return;
+        }
+
+        const submitBtn = document.getElementById('citizenSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Uploading Report...";
+
+        const file = fileField.files[0];
+        const res = await API.submitCitizenReport(loc, lat, lng, file);
+
+        if (res && res.success) {
+            App.notify("🎉 Thank you! Citizen report submitted. Dispatched to crew.");
+            document.getElementById('citizenReportForm').reset();
+            document.getElementById('citizenFileNamePreview').textContent = "No file chosen";
+            App.syncWithServer(); // Reload Leaflet and pending lists
+        } else {
+            App.notify("❌ Failed to upload citizen report.");
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Public Report";
+    }
+};
+
 // Boot
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+    CitizenReporter.init();
+});

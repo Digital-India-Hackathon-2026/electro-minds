@@ -903,6 +903,101 @@ class RequestController(BaseHTTPRequestHandler):
                 Logger.error(f"Error processing POST /api/resolve: {e}")
                 return self.send_error_response("Database resolution transaction failed", 500)
                 
+        # Route I: POST /api/citizen-report (Citizen crowdsourcing litter report with photo)
+        elif route == "/api/citizen-report":
+            try:
+                # Retrieve multipart boundary
+                boundary = ""
+                for segment in content_type.split(";"):
+                    segment = segment.strip()
+                    if segment.startswith("boundary="):
+                        boundary = segment.split("=")[1].strip()
+                        
+                if not boundary:
+                    Logger.warning("Citizen report rejected: Missing multipart boundary")
+                    return self.send_error_response("Missing multipart boundary descriptor", 400)
+                
+                # Decode parts
+                fields, files = parse_multipart_payload(body_bytes, boundary)
+                
+                location = fields.get("location", "").strip()
+                lat_str = fields.get("lat", "").strip()
+                lng_str = fields.get("lng", "").strip()
+                image_file = files.get("image")
+                
+                if not location or not lat_str or not lng_str:
+                    return self.send_error_response("Required form fields 'location', 'lat', or 'lng' are missing", 400)
+                if not image_file:
+                    return self.send_error_response("Required garbage photo attachment 'image' is missing", 400)
+
+                lat = float(lat_str)
+                lng = float(lng_str)
+
+                # Save citizen image to /uploads
+                original_name = image_file['filename']
+                sanitized_name = "".join(c for c in original_name if c.isalnum() or c in ['.', '_', '-']).strip()
+                unique_filename = f"citizen_{int(time.time())}_{sanitized_name}"
+                destination_path = os.path.join(UPLOAD_DIR, unique_filename)
+                
+                with open(destination_path, "wb") as f:
+                    f.write(image_file['content'])
+                
+                db_image_path = destination_path.replace("\\", "/")
+
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # Save as pending municipal alert
+                alert_id = f"EC-CITIZEN-{int(time.time() * 100) % 100000}"
+                cursor.execute("""
+                INSERT INTO alerts (
+                    id, location, lat, lng, plastic_type, severity, status, 
+                    time, date, timestamp, animal_name, animal_emoji, animal_type, 
+                    before_img, after_img
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    alert_id,
+                    f"{location} (Citizen Crowdsourced)",
+                    lat,
+                    lng,
+                    "Reported Litter Heap",
+                    "Medium",
+                    "pending",
+                    time.strftime("%I:%M:%S %p"),
+                    time.strftime("%b %d, %Y"),
+                    int(time.time() * 1000),
+                    "Citizen Report",
+                    "👥",
+                    "Citizen",
+                    db_image_path,
+                    ""
+                ))
+                
+                # Log audit trail
+                cursor.execute("""
+                INSERT INTO system_logs (timestamp, log_level, module, message)
+                VALUES (?, ?, ?, ?)
+                """, (
+                    time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "ALERTS",
+                    "CITIZEN_REPORT",
+                    f"Citizen reported trash heap at {location}. Image saved: {db_image_path}"
+                ))
+                
+                conn.commit()
+                conn.close()
+                
+                Logger.success(f"New citizen crowdsource trash report: {alert_id} at {location} - Image: {db_image_path}")
+                return self.return_json({
+                    "success": True, 
+                    "message": "Citizen crowdsource report successfully recorded.",
+                    "alert_id": alert_id,
+                    "image_url": db_image_path
+                })
+            except Exception as e:
+                Logger.error(f"Error processing POST /api/citizen-report: {e}")
+                return self.send_error_response("Citizen report upload transaction failed", 500)
+                
         else:
             Logger.warning(f"Resource not found: POST {route}")
             return self.send_error_response("API endpoint path not found", 404)

@@ -241,6 +241,52 @@
     </section>
 
     <!-- ========================================== -->
+    <!-- CITIZEN CROWDSOURCING REPORT SECTION      -->
+    <!-- ========================================== -->
+    <section class="bun-section" id="citizen-section">
+        <div class="section-container">
+            <h2 class="section-title text-center">👥 Public Litter Reporter</h2>
+            <p class="section-desc text-center">Spotted accumulated trash? Upload a photo and help clean our city. Reports are instantly dispatched to crew workers.</p>
+
+            <div class="bun-card" style="max-width:550px; margin:0 auto;">
+                <div class="card-header">
+                    <span class="card-header-title">Citizen Litter Report Form</span>
+                </div>
+                <div class="card-body">
+                    <form id="citizenReportForm" style="display:flex; flex-direction:column; gap:12px;">
+                        <div>
+                            <label style="font-size:10px; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:4px; text-transform:uppercase;">Litter Location Description</label>
+                            <input type="text" id="citizenLocation" class="bun-input" style="width:100%;" placeholder="e.g. Near Bus Stand, Sector 12" required>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                            <div>
+                                <label style="font-size:10px; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:4px; text-transform:uppercase;">Latitude</label>
+                                <input type="number" step="0.0001" id="citizenLat" class="bun-input" style="width:100%;" placeholder="28.6139" required>
+                            </div>
+                            <div>
+                                <label style="font-size:10px; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:4px; text-transform:uppercase;">Longitude</label>
+                                <input type="number" step="0.0001" id="citizenLng" class="bun-input" style="width:100%;" placeholder="77.2090" required>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style="font-size:10px; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:4px; text-transform:uppercase;">Litter Photo Attachment</label>
+                            <div class="file-upload-box" style="margin-top:4px;">
+                                <div class="upload-icon">📸</div>
+                                <div class="upload-label">Select Photo of the Trash Heap</div>
+                                <input type="file" id="citizenFileField" accept="image/*" required>
+                                <div class="upload-filename-preview" id="citizenFileNamePreview">No file chosen</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="bun-btn bun-btn-primary" style="width:100%;" id="citizenSubmitBtn">Submit Public Report</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
     <!-- BENCHMARKS SECTION (BUN STYLE)             -->
     <!-- ========================================== -->
     <section class="bun-section dark-bg" id="benchmark-section">
