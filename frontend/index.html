@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital India Smart Collar — Municipal Waste Management</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ===== TOP NAVBAR ===== -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <div class="nav-brand">
+                <span class="brand-icon">🐾</span>
+                <div class="brand-text">
+                    <span class="brand-title">EcoCollar</span>
+                    <span class="brand-sub">Digital India Initiative</span>
+                </div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-view="collar">
+                    <span class="tab-icon">📡</span>
+                    <span class="tab-label">Smart Collar</span>
+                </button>
+                <button class="nav-tab" data-view="dashboard">
+                    <span class="tab-icon">🏛️</span>
+                    <span class="tab-label">Command Center</span>
+                </button>
+            </div>
+            <div class="nav-status">
+                <span class="live-badge">● LIVE</span>
+                <span class="nav-time" id="navTime">--:--:--</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== VIEW A: SMART COLLAR EMULATOR ===== -->
+    <section id="view-collar" class="view active">
+
+        <!-- Hero Banner -->
+        <div class="collar-hero">
+            <div class="hero-bg-pulse"></div>
+            <div class="hero-content">
+                <h1>Smart Collar <span class="gradient-text">Emulator</span></h1>
+                <p>Real-time plastic waste detection & animal safety monitoring system</p>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <span class="hero-stat-num" id="heroScans">0</span>
+                        <span class="hero-stat-lbl">Scans</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-num" id="heroDetections">0</span>
+                        <span class="hero-stat-lbl">Detections</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-num" id="heroAnimals">1</span>
+                        <span class="hero-stat-lbl">Animals</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container collar-container">
+
+            <!-- Row 1: Animal Profile + Collar Status -->
+            <div class="collar-row-1">
+
+                <!-- Animal Profile Card -->
+                <div class="card glass animal-profile-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <h2><span class="icon">🐕</span> Animal Profile</h2>
+                        <span class="chip online-chip">● Online</span>
+                    </div>
+                    <div class="animal-body">
+                        <div class="animal-avatar-wrap">
+                            <div class="animal-avatar-ring">
+                                <div class="animal-avatar-inner">
+                                    <span class="avatar-emoji" id="avatarEmoji">🐕</span>
+                                </div>
+                            </div>
+                            <div class="avatar-pulse"></div>
+                        </div>
+                        <div class="animal-meta">
+                            <h3 id="animalNameDisplay">Rocky</h3>
+                            <span class="animal-breed" id="animalTypeDisplay">Street Dog · Male</span>
+                            <div class="animal-vitals">
+                                <div class="vital">
+                                    <span class="vital-icon">❤️</span>
+                                    <div class="vital-info">
+                                        <span class="vital-lbl">Heart Rate</span>
+                                        <span class="vital-val" id="heartRate">72 <small>bpm</small></span>
+                                    </div>
+                                </div>
+                                <div class="vital">
+                                    <span class="vital-icon">🌡️</span>
+                                    <div class="vital-info">
+                                        <span class="vital-lbl">Temp</span>
+                                        <span class="vital-val" id="bodyTemp">38.2 <small>°C</small></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="animal-gps">
+                                <span class="gps-icon">📍</span>
+                                <span class="gps-text" id="gpsCoords">28.6139°N, 77.2090°E</span>
+                            </div>
+                            <div class="animal-location">
+                                <span class="loc-icon">🏙️</span>
+                                <span id="animalLocationDisplay">Central Park, Sector 7</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collar Status Card -->
+                <div class="card glass collar-status-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <h2><span class="icon">📡</span> Collar Telemetry</h2>
+                        <span class="chip" id="collarStatusChip">● Active</span>
+                    </div>
+                    <div class="collar-telemetry">
+                        <div class="collar-ring-visual">
+                            <div class="collar-ring-outer">
+                                <div class="collar-ring-middle">
+                                    <div class="collar-ring-inner">
+                                        <span class="collar-led" id="collarLedIndicator">🟢</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ring-progress" id="scanProgress"></div>
+                        </div>
+                        <div class="telemetry-bars">
+                            <div class="tele-item">
+                                <div class="tele-head">
+                                    <span class="tele-lbl">🔋 Battery</span>
+                                    <span class="tele-val" id="batteryPercent">87%</span>
+                                </div>
+                                <div class="tele-track">
+                                    <div class="tele-fill battery-fill" id="batteryFillBar" style="width:87%"></div>
+                                </div>
+                            </div>
+                            <div class="tele-item">
+                                <div class="tele-head">
+                                    <span class="tele-lbl">📶 Signal</span>
+                                    <span class="tele-val strong" id="signalStrength">Strong</span>
+                                </div>
+                                <div class="tele-track">
+                                    <div class="tele-fill signal-fill" id="signalFillBar" style="width:92%"></div>
+                                </div>
+                            </div>
+                            <div class="tele-item">
+                                <div class="tele-head">
+                                    <span class="tele-lbl">⏱️ Last Scan</span>
+                                    <span class="tele-val" id="lastScanTime">Just now</span>
+                                </div>
+                            </div>
+                            <div class="tele-item">
+                                <div class="tele-head">
+                                    <span class="tele-lbl">🆔 Collar ID</span>
+                                    <span class="tele-val">EC-2024-0042</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Sensor Matrix + Scan Controls -->
+            <div class="collar-row-2">
+
+                <!-- Sensor Matrix -->
+                <div class="card glass sensor-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <h2><span class="icon">🔬</span> Sensor Matrix</h2>
+                        <div class="sensor-indicators">
+                            <span class="sensor-dot active" title="IR Sensor"></span>
+                            <span class="sensor-dot active" title="NIR Sensor"></span>
+                            <span class="sensor-dot active" title="Ultrasonic"></span>
+                        </div>
+                    </div>
+                    <div class="sensor-grid">
+                        <div class="sensor-unit">
+                            <div class="sensor-vis">
+                                <div class="sensor-wave" id="irWave">
+                                    <span></span><span></span><span></span><span></span>
+                                </div>
+                                <div class="sensor-ring">
+                                    <div class="sensor-ring-fill" id="irRingFill" style="--p:12"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-meta">
+                                <span class="sensor-name">IR Sensor</span>
+                                <span class="sensor-read" id="irRead">12%</span>
+                            </div>
+                            <div class="sensor-bar-track">
+                                <div class="sensor-bar-fill" id="irBarFill" style="width:12%"></div>
+                            </div>
+                        </div>
+                        <div class="sensor-unit">
+                            <div class="sensor-vis">
+                                <div class="sensor-wave" id="nirWave">
+                                    <span></span><span></span><span></span><span></span>
+                                </div>
+                                <div class="sensor-ring">
+                                    <div class="sensor-ring-fill" id="nirRingFill" style="--p:8"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-meta">
+                                <span class="sensor-name">NIR Sensor</span>
+                                <span class="sensor-read" id="nirRead">8%</span>
+                            </div>
+                            <div class="sensor-bar-track">
+                                <div class="sensor-bar-fill" id="nirBarFill" style="width:8%"></div>
+                            </div>
+                        </div>
+                        <div class="sensor-unit">
+                            <div class="sensor-vis">
+                                <div class="sensor-wave" id="ultraWave">
+                                    <span></span><span></span><span></span><span></span>
+                                </div>
+                                <div class="sensor-ring">
+                                    <div class="sensor-ring-fill" id="ultraRingFill" style="--p:5"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-meta">
+                                <span class="sensor-name">Ultrasonic</span>
+                                <span class="sensor-read" id="ultraRead">5%</span>
+                            </div>
+                            <div class="sensor-bar-track">
+                                <div class="sensor-bar-fill" id="ultraBarFill" style="width:5%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scan Control Panel -->
+                <div class="card glass scan-control-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <h2><span class="icon">🎯</span> Scan Control</h2>
+                        <span class="chip" id="scanModeChip">Auto</span>
+                    </div>
+                    <div class="scan-control-body">
+                        <div class="scan-timer-ring">
+                            <svg viewBox="0 0 100 100" class="timer-svg">
+                                <circle cx="50" cy="50" r="42" class="timer-bg" />
+                                <circle cx="50" cy="50" r="42" class="timer-progress" id="timerProgress"
+                                    stroke-dasharray="263.89" stroke-dashoffset="0" />
+                            </svg>
+                            <div class="timer-center">
+                                <span class="timer-icon">🔄</span>
+                                <span class="timer-count" id="timerCount">8</span>
+                            </div>
+                        </div>
+                        <button class="scan-btn" id="scanBtn">
+                            <span class="scan-btn-bg"></span>
+                            <span class="scan-btn-content">
+                                <span class="scan-btn-icon">⚡</span>
+                                <span class="scan-btn-text">Scan Now</span>
+                            </span>
+                        </button>
+                        <div class="scan-result" id="scanResult">
+                            <div class="result-safe">
+                                <span class="result-icon">✅</span>
+                                <span>Environment is clean. No plastic detected.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Alert History -->
+            <div class="collar-row-3">
+                <div class="card glass alert-history-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <h2><span class="icon">🔔</span> Alert History</h2>
+                        <div class="alert-header-right">
+                            <span class="alert-badge" id="alertBadge">0</span>
+                            <button class="btn-ghost" id="clearHistoryBtn">Clear</button>
+                        </div>
+                    </div>
+                    <div class="alert-history-body" id="alertHistoryBody">
+                        <div class="alert-empty-state">
+                            <span class="empty-icon">🛡️</span>
+                            <p>No plastic detected yet. The area is clean!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ===== VIEW B: MUNICIPALITY COMMAND CENTER ===== -->
+    <section id="view-dashboard" class="view">
+
+        <!-- Dashboard Hero -->
+        <div class="dash-hero">
+            <div class="dash-hero-content">
+                <h1>🏛️ Municipality <span class="gradient-text">Command Center</span></h1>
+                <p>Centralized plastic waste monitoring, alert management & cleanup coordination</p>
+            </div>
+        </div>
+
+        <div class="container dash-container">
+
+            <!-- KPI Analytics Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-total">
+                    <div class="kpi-glow"></div>
+                    <div class="kpi-icon-wrap">⚠️</div>
+                    <div class="kpi-info">
+                        <span class="kpi-number" id="kpiTotal">0</span>
+                        <span class="kpi-label">Total Alerts</span>
+                    </div>
+                    <div class="kpi-bar"></div>
+                </div>
+                <div class="kpi-card kpi-pending">
+                    <div class="kpi-glow"></div>
+                    <div class="kpi-icon-wrap">🔄</div>
+                    <div class="kpi-info">
+                        <span class="kpi-number" id="kpiPending">0</span>
+                        <span class="kpi-label">Pending</span>
+                    </div>
+                    <div class="kpi-bar"></div>
+                </div>
+                <div class="kpi-card kpi-progress">
+                    <div class="kpi-glow"></div>
+                    <div class="kpi-icon-wrap">🚛</div>
+                    <div class="kpi-info">
+                        <span class="kpi-number" id="kpiInProgress">0</span>
+                        <span class="kpi-label">In Progress</span>
+                    </div>
+                    <div class="kpi-bar"></div>
+                </div>
+                <div class="kpi-card kpi-resolved">
+                    <div class="kpi-glow"></div>
+                    <div class="kpi-icon-wrap">✅</div>
+                    <div class="kpi-info">
+                        <span class="kpi-number" id="kpiResolved">0</span>
+                        <span class="kpi-label">Resolved</span>
+                    </div>
+                    <div class="kpi-bar"></div>
+                </div>
+            </div>
+
+            <!-- Map + Alerts Side by Side -->
+            <div class="dash-main-grid">
+
+                <!-- Map Card -->
+                <div class="card glass map-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <h2><span class="icon">🗺️</span> Plastic Hotspot Map</h2>
+                        <div class="map-legend">
+                            <span class="legend-item"><span class="legend-dot new-dot"></span> New</span>
+                            <span class="legend-item"><span class="legend-dot progress-dot"></span> In Progress</span>
+                            <span class="legend-item"><span class="legend-dot resolved-dot"></span> Resolved</span>
+                        </div>
+                    </div>
+                    <div id="map"></div>
+                </div>
+
+                <!-- Alert Management Table -->
+                <div class="card glass alerts-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <h2><span class="icon">📋</span> Alert Management</h2>
+                        <div class="filter-group">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="pending">Pending</button>
+                            <button class="filter-btn" data-filter="in-progress">Active</button>
+                            <button class="filter-btn" data-filter="resolved">Done</button>
+                        </div>
+                    </div>
+                    <div class="alerts-table-wrap">
+                        <table class="alerts-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Animal</th>
+                                    <th>Plastic Type</th>
+                                    <th>Location</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alertsTbody">
+                                <tr>
+                                    <td colspan="7" class="empty-row">
+                                        <span class="empty-row-icon">🗺️</span>
+                                        <p>No alerts yet. Waiting for collar detections...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Cleanup Scheduler -->
+            <div class="card glass scheduler-card">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <h2><span class="icon">🤖</span> AI Cleanup Scheduler</h2>
+                    <button class="btn-primary" id="dispatchBtn">
+                        <span class="btn-primary-bg"></span>
+                        <span class="btn-primary-content">🚛 Dispatch Crew</span>
+                    </button>
+                </div>
+                <div class="scheduler-body" id="schedulerBody">
+                    <div class="scheduler-empty">
+                        <span class="sched-empty-icon">🧹</span>
+                        <p>No pending alerts to schedule. All clear!</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ===== ALERT MODAL ===== -->
+    <div class="modal-overlay" id="alertModal">
+        <div class="modal glass">
+            <div class="modal-glow"></div>
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-alert-icon">🚨</span>
+                    <h2>Plastic Detected!</h2>
+                </div>
+                <button class="modal-x" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-details">
+                    <div class="modal-detail">
+                        <span class="md-icon">📍</span>
+                        <div><strong>Location</strong><p id="modalLocation">--</p></div>
+                    </div>
+                    <div class="modal-detail">
+                        <span class="md-icon">🥤</span>
+                        <div><strong>Plastic Type</strong><p id="modalPlastic">--</p></div>
+                    </div>
+                    <div class="modal-detail">
+                        <span class="md-icon">⚠️</span>
+                        <div><strong>Severity</strong><p id="modalSeverity">--</p></div>
+                    </div>
+                    <div class="modal-detail">
+                        <span class="md-icon">🕐</span>
+                        <div><strong>Detected At</strong><p id="modalTime">--</p></div>
+                    </div>
+                    <div class="modal-detail">
+                        <span class="md-icon">🐕</span>
+                        <div><strong>Animal</strong><p id="modalAnimal">--</p></div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-primary" id="modalNotify">
+                        <span class="btn-primary-bg"></span>
+                        <span class="btn-primary-content">🔔 Notify Municipality</span>
+                    </button>
+                    <button class="btn-secondary" id="modalDismiss">Dismiss</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
