@@ -527,6 +527,131 @@
         </div>
     </section>
 
+    <!-- ========================================== -->
+    <!-- COMMERCIAL CUSTOMER SECTION (PORTAL 4)     -->
+    <!-- ========================================== -->
+    <section class="bun-section dark-bg" id="customer-section">
+        <div class="section-container">
+            <h2 class="section-title">Commercial Customer Hub</h2>
+            <p class="section-desc">Client analytics dashboard. View leased collar subscriptions, payment status, and order custom area sweeps.</p>
+
+            <!-- Customer Lock State -->
+            <div class="auth-gate-wrapper" id="customerAuthGate">
+                <div class="gate-card">
+                    <span class="gate-icon">👤</span>
+                    <h3>Customer Access</h3>
+                    <p>Enter customer credentials to manage property subscriptions</p>
+                    
+                    <form id="customerLoginForm" class="gate-form">
+                        <input type="text" id="customerUsername" placeholder="Username (customer)" required>
+                        <input type="password" id="customerPassword" placeholder="Password (customer)" required>
+                        <button type="submit" class="bun-btn bun-btn-primary">Unlock Client Hub</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Customer Dashboard -->
+            <div class="customer-dashboard-wrap" id="customerDashboard" style="display:none; flex-direction:column; gap:20px;">
+                <div class="admin-meta-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:16px;">
+                    <div class="admin-profile" style="display:flex; gap:12px; align-items:center;">
+                        <span class="avatar" style="font-size:24px;">🏢</span>
+                        <div>
+                            <h4 id="custCompanyName" style="font-size:13px; font-weight:800; color:#fff; text-transform:uppercase;">Greenfield Parks & Campuses</h4>
+                            <p style="font-size:10px; color:var(--text-secondary);">Customer Profile: <span style="color:var(--accent-light);" id="custSubscriptionTier">Premium Enterprise</span></p>
+                        </div>
+                    </div>
+                    <button class="bun-btn bun-btn-secondary" id="customerLogoutBtn">Logout</button>
+                </div>
+
+                <div class="admin-columns-grid">
+                    <!-- Left: Subscriptions, Billing & Stats -->
+                    <div class="bun-card">
+                        <div class="card-header">
+                            <span class="card-header-title">Subscription & Billing Statement</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="dashboard-metric-strip" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px;">
+                                <div class="metric-mini-card" style="background:#000; border:1px solid var(--border-color); padding:10px; border-radius:6px; text-align:center;">
+                                    <span style="font-size:9px; color:var(--text-secondary); text-transform:uppercase; display:block;">Active Collars</span>
+                                    <h3 style="font-size:18px; font-weight:800; color:#fff; margin-top:4px;" id="custLeasedCollars">4 Nodes</h3>
+                                </div>
+                                <div class="metric-mini-card" style="background:#000; border:1px solid var(--border-color); padding:10px; border-radius:6px; text-align:center;">
+                                    <span style="font-size:9px; color:var(--text-secondary); text-transform:uppercase; display:block;">Billing Due</span>
+                                    <h3 style="font-size:18px; font-weight:800; color:var(--accent); margin-top:4px;" id="custBillingDue">$196.00</h3>
+                                </div>
+                                <div class="metric-mini-card" style="background:#000; border:1px solid var(--border-color); padding:10px; border-radius:6px; text-align:center;">
+                                    <span style="font-size:9px; color:var(--text-secondary); text-transform:uppercase; display:block;">Total Recycled</span>
+                                    <h3 style="font-size:18px; font-weight:800; color:#00f5a0; margin-top:4px;" id="custWeightCollected">24.5 kg</h3>
+                                </div>
+                            </div>
+                            
+                            <div style="background:rgba(249,115,22,0.05); border:1px solid var(--accent); padding:12px; border-radius:6px; font-size:11px; line-height:1.45; color:var(--text-secondary); display:flex; gap:10px; align-items:center;">
+                                <span style="font-size:18px;">💡</span>
+                                <div>
+                                    <strong style="color:#fff;">Double-click on the map</strong> to drop a manual waste report pin for dispatch crews, or request a custom sweeping sweep below.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Request priority sweep -->
+                    <div class="bun-card">
+                        <div class="card-header">
+                            <span class="card-header-title">Request Priority Area Sweep</span>
+                        </div>
+                        <div class="card-body">
+                            <form id="custSweepRequestForm" style="display:flex; flex-direction:column; gap:8px;">
+                                <div>
+                                    <label style="font-size:10px; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:4px; text-transform:uppercase;">Property Sector Location Name</label>
+                                    <input type="text" id="custSweepLocation" class="bun-input" style="width:100%;" placeholder="e.g. Sector 5 West Playground" required>
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                    <div>
+                                        <label style="font-size:10px; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:4px; text-transform:uppercase;">Latitude</label>
+                                        <input type="number" step="0.0001" id="custSweepLat" class="bun-input" style="width:100%;" placeholder="28.6139" required>
+                                    </div>
+                                    <div>
+                                        <label style="font-size:10px; font-weight:bold; color:var(--text-secondary); display:block; margin-bottom:4px; text-transform:uppercase;">Longitude</label>
+                                        <input type="number" step="0.0001" id="custSweepLng" class="bun-input" style="width:100%;" placeholder="77.2090" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="bun-btn bun-btn-primary" style="margin-top:4px; width:100%;">Request Priority Sweep Dispatch</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sweep request list -->
+                <div class="bun-card">
+                    <div class="card-header">
+                        <span class="card-header-title">Sweep Dispatch History</span>
+                    </div>
+                    <div class="card-body scroll-body">
+                        <div class="alerts-table-wrapper">
+                            <table class="alerts-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sweep ID</th>
+                                        <th>Sector/Location</th>
+                                        <th>Coordinates</th>
+                                        <th>Requested On</th>
+                                        <th>Dispatch Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="custSweepsTbody">
+                                    <!-- Seeded dynamically -->
+                                    <tr>
+                                        <td colspan="5" style="text-align:center; color:var(--text-muted);">No custom sweep dispatches registered.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- ===== ALERT MODAL DIALOG ===== -->
     <div class="modal-overlay" id="alertModal">
         <div class="modal">

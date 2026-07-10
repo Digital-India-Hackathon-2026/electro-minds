@@ -183,6 +183,42 @@ def init_db():
         )
         """)
 
+        # Table E: Customers (Commercial clients leasing collars)
+        Logger.database("Checking Table: customers")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS customers (
+            id TEXT PRIMARY KEY,
+            company_name TEXT NOT NULL,
+            subscription_tier TEXT NOT NULL,
+            leased_collars INTEGER NOT NULL,
+            billing_due REAL NOT NULL,
+            weight_collected REAL NOT NULL
+        )
+        """)
+
+        # Table F: Sweep Requests (Client requested sweeps)
+        Logger.database("Checking Table: sweep_requests")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sweep_requests (
+            id TEXT PRIMARY KEY,
+            customer_id TEXT NOT NULL,
+            location TEXT NOT NULL,
+            lat REAL NOT NULL,
+            lng REAL NOT NULL,
+            status TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            FOREIGN KEY (customer_id) REFERENCES customers(id)
+        )
+        """)
+
+        # Seed default customer profile if empty
+        cursor.execute("SELECT COUNT(*) FROM customers")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+            INSERT INTO customers (id, company_name, subscription_tier, leased_collars, billing_due, weight_collected)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, ("cust-101", "Greenfield Parks & Campuses", "Premium Enterprise", 4, 196.00, 24.5))
+
         # Seed initial collar devices if empty
         cursor.execute("SELECT COUNT(*) FROM fleet")
         if cursor.fetchone()[0] == 0:
@@ -448,6 +484,40 @@ class RequestController(BaseHTTPRequestHandler):
                 Logger.error(f"Database error on GET /api/stats: {e}")
                 return self.send_error_response("Database read transaction failed", 500)
 
+        # Route D2: GET /api/customer/stats (Retrieves customer specific billing & sweeps log)
+        elif route == "/api/customer/stats":
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # Fetch customer info
+                cursor.execute("SELECT * FROM customers WHERE id = ?", ("cust-101",))
+                cust_row = cursor.fetchone()
+                
+                # Fetch custom sweep requests
+                cursor.execute("SELECT * FROM sweep_requests ORDER BY timestamp DESC")
+                sweep_rows = cursor.fetchall()
+                conn.close()
+                
+                cust_data = dict(cust_row) if cust_row else {
+                    "id": "cust-101",
+                    "company_name": "Greenfield Parks & Campuses",
+                    "subscription_tier": "Premium Enterprise",
+                    "leased_collars": 4,
+                    "billing_due": 196.00,
+                    "weight_collected": 24.5
+                }
+                
+                sweeps = [dict(s) for s in sweep_rows]
+                
+                return self.return_json({
+                    "customer": cust_data,
+                    "sweeps": sweeps
+                })
+            except Exception as e:
+                Logger.error(f"Database error on GET /api/customer/stats: {e}")
+                return self.send_error_response("Database read transaction failed", 500)
+
         # --- STATIC FILE SERVER CONTROLS ---
         else:
             # Map request path to local project workspace
@@ -534,9 +604,12 @@ class RequestController(BaseHTTPRequestHandler):
                 elif username == "worker" and password == "worker":
                     Logger.success(f"Field Worker Authenticated successfully: {username}")
                     return self.return_json({"success": True, "role": "worker", "token": "MOCK-JWT-WORKER"})
+                elif username == "customer" and password == "customer":
+                    Logger.success(f"Commercial Customer Authenticated successfully: {username}")
+                    return self.return_json({"success": True, "role": "customer", "token": "MOCK-JWT-CUSTOMER", "customer_id": "cust-101"})
                 else:
                     Logger.warning(f"Failed login attempt for username: {username}")
-                    return self.send_error_response("Invalid credentials. Try admin/admin or worker/worker", 401)
+                    return self.send_error_response("Invalid credentials. Try admin/admin, worker/worker, or customer/customer", 401)
             except Exception as e:
                 Logger.error(f"Error processing POST /api/login: {e}")
                 return self.send_error_response("Invalid JSON parsing", 400)
@@ -629,6 +702,82 @@ class RequestController(BaseHTTPRequestHandler):
             except Exception as e:
                 Logger.error(f"Error processing POST /api/alerts: {e}")
                 return self.send_error_response("Failed database insert transaction", 500)
+
+        # Route F2: POST /api/sweeps (Commercial Customer priority sweep request)
+        elif route == "/api/sweeps":
+            try:
+                sweep_payload = json.loads(body_bytes.decode('utf-8'))
+                customer_id = sweep_payload.get("customer_id", "cust-101").strip()
+                location = sweep_payload.get("location", "").strip()
+                lat = float(sweep_payload.get("lat", 0.0))
+                lng = float(sweep_payload.get("lng", 0.0))
+                
+                if not location or not lat or not lng:
+                    return self.send_error_response("Missing required parameter fields 'location', 'lat', or 'lng'", 400)
+                
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # Insert request into sweep_requests table
+                sweep_id = f"SWEEP-{int(time.time())}"
+                cursor.execute("""
+                INSERT INTO sweep_requests (id, customer_id, location, lat, lng, status, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    sweep_id,
+                    customer_id,
+                    location,
+                    lat,
+                    lng,
+                    "pending",
+                    int(time.time())
+                ))
+                
+                # Also auto-insert a municipal alert so the municipality crew sees it as a cleanup dispatch!
+                alert_id = f"EC-SWEEP-{int(time.time() * 100) % 100000}"
+                cursor.execute("""
+                INSERT INTO alerts (
+                    id, location, lat, lng, plastic_type, severity, status, 
+                    time, date, timestamp, animal_name, animal_emoji, animal_type, 
+                    before_img, after_img
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    alert_id,
+                    f"{location} (Priority Client Sweep)",
+                    lat,
+                    lng,
+                    "Priority Area Sweep",
+                    "Medium",
+                    "pending",
+                    time.strftime("%I:%M:%S %p"),
+                    time.strftime("%b %d, %Y"),
+                    int(time.time() * 1000),
+                    "Client Request",
+                    "📍",
+                    "Citizen",
+                    "images/plastic-alert-default.png",
+                    ""
+                ))
+                
+                # Log audit trail
+                cursor.execute("""
+                INSERT INTO system_logs (timestamp, log_level, module, message)
+                VALUES (?, ?, ?, ?)
+                """, (
+                    time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "ALERTS",
+                    "CUSTOMER_PORTAL",
+                    f"Customer {customer_id} requested priority sweep at {location}"
+                ))
+                
+                conn.commit()
+                conn.close()
+                
+                Logger.success(f"New priority sweep logged: {sweep_id} at {location}")
+                return self.return_json({"success": True, "message": "Priority sweep request successfully recorded.", "sweep_id": sweep_id})
+            except Exception as e:
+                Logger.error(f"Error processing POST /api/sweeps: {e}")
+                return self.send_error_response("Failed sweep insert transaction", 500)
 
         # Route G: POST /api/deploy (Assigns workers and sends Twilio SMS logs)
         elif route == "/api/deploy":

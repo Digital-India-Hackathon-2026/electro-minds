@@ -105,6 +105,14 @@ const API = {
             method: 'POST',
             body: formData
         });
+    },
+    async getCustomerStats() { return await this.request('/api/customer/stats') || {}; },
+    async requestSweep(location, lat, lng) {
+        return await this.request('/api/sweeps', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customer_id: "cust-101", location, lat, lng })
+        });
     }
 };
 
@@ -437,11 +445,12 @@ const App = {
         
         if (filter === 'enabled') {
             state.alerts.forEach(a => {
-                const color = a.status === 'pending' ? varColor('--coral') :
-                              a.status === 'in-progress' ? varColor('--accent') : varColor('--mint');
+                const isSweep = a.plastic_type === "Priority Area Sweep";
+                const color = isSweep ? "#a855f7" : (a.status === 'pending' ? varColor('--coral') :
+                              a.status === 'in-progress' ? varColor('--accent') : varColor('--mint'));
 
                 const circle = L.circleMarker([a.lat, a.lng], {
-                    radius: 8,
+                    radius: isSweep ? 9 : 8,
                     fillColor: color,
                     color: '#fff',
                     weight: 1.5,
@@ -449,8 +458,9 @@ const App = {
                     fillOpacity: 0.85
                 }).addTo(state.map);
 
-                const statusLabel = a.status === 'pending' ? '🚨 PENDING ALERT' :
-                                    a.status === 'in-progress' ? '🚛 DISPATCHED (Active)' : '✅ RESOLVED (Cleaned)';
+                const statusLabel = isSweep ? '✨ PRIORITY CLIENT SWEEP' :
+                                    (a.status === 'pending' ? '🚨 PENDING ALERT' :
+                                     a.status === 'in-progress' ? '🚛 DISPATCHED (Active)' : '✅ RESOLVED (Cleaned)');
 
                 circle.bindPopup(`
                     <div style="font-family:sans-serif;font-size:11px;min-width:180px;">
@@ -1103,6 +1113,114 @@ document.getElementById('workerLoginForm').onsubmit = (e) => {
     const p = document.getElementById('workerPassword').value;
     WorkerPortal.login(u, p);
 };
+
+// ============================================================
+// COMMERCIAL CUSTOMER PORTAL MODULE
+// ============================================================
+const CustomerPortal = {
+    async login(username, password) {
+        const res = await API.login(username, password);
+        if (res && res.success) {
+            state.userRole = "customer";
+            document.getElementById('customerAuthGate').style.display = "none";
+            document.getElementById('customerDashboard').style.display = "flex";
+            App.notify("🔓 Customer Portal unlocked.");
+            this.loadCustomerStats();
+            // Setup Leaflet double click reporting
+            state.map.on('dblclick', this.handleMapDoubleClick);
+        } else {
+            App.notify("❌ Invalid Credentials. Try customer/customer");
+        }
+    },
+
+    logout() {
+        state.userRole = null;
+        document.getElementById('customerDashboard').style.display = "none";
+        document.getElementById('customerAuthGate').style.display = "flex";
+        App.notify("🔒 Session terminated.");
+        if (state.map) {
+            state.map.off('dblclick', this.handleMapDoubleClick);
+        }
+    },
+
+    async loadCustomerStats() {
+        const data = await API.getCustomerStats();
+        if (data && data.customer) {
+            const c = data.customer;
+            document.getElementById('custCompanyName').textContent = c.company_name;
+            document.getElementById('custSubscriptionTier').textContent = c.subscription_tier;
+            document.getElementById('custLeasedCollars').textContent = `${c.leased_collars} Nodes`;
+            document.getElementById('custBillingDue').textContent = `$${c.billing_due.toFixed(2)}`;
+            document.getElementById('custWeightCollected').textContent = `${c.weight_collected.toFixed(1)} kg`;
+            
+            // Build sweeps table
+            const tbody = document.getElementById('custSweepsTbody');
+            if (data.sweeps && data.sweeps.length > 0) {
+                tbody.innerHTML = data.sweeps.map(s => {
+                    const date = new Date(s.timestamp * 1000).toLocaleString();
+                    const statusClass = s.status === 'pending' ? 'badge-warn' : 'badge-success';
+                    return `
+                        <tr>
+                            <td><code>${s.id}</code></td>
+                            <td><strong>${s.location}</strong></td>
+                            <td><code>${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</code></td>
+                            <td>${date}</td>
+                            <td><span class="status-badge ${statusClass}">${s.status.toUpperCase()}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No custom sweep dispatches registered.</td></tr>`;
+            }
+        }
+    },
+
+    async requestSweep(e) {
+        e.preventDefault();
+        const loc = document.getElementById('custSweepLocation').value.trim();
+        const lat = parseFloat(document.getElementById('custSweepLat').value);
+        const lng = parseFloat(document.getElementById('custSweepLng').value);
+
+        if (!loc || isNaN(lat) || isNaN(lng)) {
+            App.notify("⚠️ Please enter a valid sector name and coordinates.");
+            return;
+        }
+
+        const res = await API.requestSweep(loc, lat, lng);
+        if (res && res.success) {
+            App.notify("✨ Custom priority sweep requested! Dispatch sent to crew.");
+            document.getElementById('custSweepRequestForm').reset();
+            this.loadCustomerStats();
+            App.syncWithServer(); // Sync Leaflet map and alerts list!
+        } else {
+            App.notify("❌ Failed to request priority sweep.");
+        }
+    },
+
+    handleMapDoubleClick(e) {
+        if (state.userRole !== 'customer') return;
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        document.getElementById('custSweepLat').value = lat.toFixed(4);
+        document.getElementById('custSweepLng').value = lng.toFixed(4);
+        
+        // Scroll to form
+        document.getElementById('custSweepLocation').focus();
+        
+        App.notify(`✔ Coordinates copied: [${lat.toFixed(4)}, ${lng.toFixed(4)}]. Name your sector and submit!`);
+    }
+};
+
+// Bindings
+document.getElementById('customerLoginForm').onsubmit = (e) => {
+    e.preventDefault();
+    const u = document.getElementById('customerUsername').value;
+    const p = document.getElementById('customerPassword').value;
+    CustomerPortal.login(u, p);
+};
+document.getElementById('customerLogoutBtn').onclick = () => CustomerPortal.logout();
+document.getElementById('custSweepRequestForm').onsubmit = (e) => CustomerPortal.requestSweep(e);
 document.getElementById('workerLogoutBtn').onclick = () => WorkerPortal.logout();
 document.getElementById('phoneFormBackBtn').onclick = () => WorkerPortal.hideUploadForm();
 document.getElementById('uploadFileField').onchange = (e) => {
