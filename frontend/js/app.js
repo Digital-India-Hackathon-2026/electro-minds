@@ -137,6 +137,7 @@ const App = {
         Emulator.init();
         Slider.init();
         Tour.init();
+        PortalGateway.init();
         
         // Load static elements and GIS
         await this.syncWithServer();
@@ -995,26 +996,6 @@ document.getElementById('modalNotifyBtn').onclick = async () => {
 // ADMIN CONSOLE CORE MODULE
 // ============================================================
 const AdminConsole = {
-    async login(username, password) {
-        const res = await API.login(username, password);
-        if (res && res.success) {
-            state.userRole = "admin";
-            document.getElementById('adminAuthGate').style.display = "none";
-            document.getElementById('adminDashboard').style.display = "flex";
-            App.notify("🔓 Authorization accepted.");
-            App.syncWithServer();
-        } else {
-            App.notify("❌ Invalid Credentials. Try admin/admin");
-        }
-    },
-
-    logout() {
-        state.userRole = null;
-        document.getElementById('adminDashboard').style.display = "none";
-        document.getElementById('adminAuthGate').style.display = "flex";
-        App.notify("🔒 Session terminated.");
-    },
-
     async deployCrew(alertId) {
         const res = await API.deployCrews([alertId]);
         if (res && res.success) {
@@ -1038,13 +1019,6 @@ const AdminConsole = {
 };
 
 // Bindings
-document.getElementById('adminLoginForm').onsubmit = (e) => {
-    e.preventDefault();
-    const u = document.getElementById('adminUsername').value;
-    const p = document.getElementById('adminPassword').value;
-    AdminConsole.login(u, p);
-};
-document.getElementById('adminLogoutBtn').onclick = () => AdminConsole.logout();
 document.getElementById('adminBulkDispatchBtn').onclick = () => AdminConsole.bulkDispatch();
 
 // Filters clicks
@@ -1064,26 +1038,6 @@ document.getElementById('routingToggle').onchange = () => App.updateMapElements(
 // FIELD WORKER PORTAL CORE MODULE
 // ============================================================
 const WorkerPortal = {
-    async login(username, password) {
-        const res = await API.login(username, password);
-        if (res && res.success) {
-            state.userRole = "worker";
-            document.getElementById('workerAuthGate').style.display = "none";
-            document.getElementById('workerDashboard').style.display = "flex";
-            App.notify("🔓 Worker authorized.");
-            App.syncWithServer();
-        } else {
-            App.notify("❌ Invalid Credentials. Try worker/worker");
-        }
-    },
-
-    logout() {
-        state.userRole = null;
-        document.getElementById('workerDashboard').style.display = "none";
-        document.getElementById('workerAuthGate').style.display = "flex";
-        App.notify("🔒 Session terminated.");
-    },
-
     showUploadForm(alert) {
         document.getElementById('phoneTaskList').style.display = "none";
         document.getElementById('phoneUploadForm').style.display = "block";
@@ -1129,43 +1083,12 @@ const WorkerPortal = {
     }
 };
 
-// Bindings
-document.getElementById('workerLoginForm').onsubmit = (e) => {
-    e.preventDefault();
-    const u = document.getElementById('workerUsername').value;
-    const p = document.getElementById('workerPassword').value;
-    WorkerPortal.login(u, p);
-};
+
 
 // ============================================================
 // COMMERCIAL CUSTOMER PORTAL MODULE
 // ============================================================
 const CustomerPortal = {
-    async login(username, password) {
-        const res = await API.login(username, password);
-        if (res && res.success) {
-            state.userRole = "customer";
-            document.getElementById('customerAuthGate').style.display = "none";
-            document.getElementById('customerDashboard').style.display = "flex";
-            App.notify("🔓 Customer Portal unlocked.");
-            this.loadCustomerStats();
-            // Setup Leaflet double click reporting
-            state.map.on('dblclick', this.handleMapDoubleClick);
-        } else {
-            App.notify("❌ Invalid Credentials. Try customer/customer");
-        }
-    },
-
-    logout() {
-        state.userRole = null;
-        document.getElementById('customerDashboard').style.display = "none";
-        document.getElementById('customerAuthGate').style.display = "flex";
-        App.notify("🔒 Session terminated.");
-        if (state.map) {
-            state.map.off('dblclick', this.handleMapDoubleClick);
-        }
-    },
-
     async loadCustomerStats() {
         const data = await API.getCustomerStats();
         if (data && data.customer) {
@@ -1236,15 +1159,7 @@ const CustomerPortal = {
 };
 
 // Bindings
-document.getElementById('customerLoginForm').onsubmit = (e) => {
-    e.preventDefault();
-    const u = document.getElementById('customerUsername').value;
-    const p = document.getElementById('customerPassword').value;
-    CustomerPortal.login(u, p);
-};
-document.getElementById('customerLogoutBtn').onclick = () => CustomerPortal.logout();
 document.getElementById('custSweepRequestForm').onsubmit = (e) => CustomerPortal.requestSweep(e);
-document.getElementById('workerLogoutBtn').onclick = () => WorkerPortal.logout();
 document.getElementById('phoneFormBackBtn').onclick = () => WorkerPortal.hideUploadForm();
 document.getElementById('uploadFileField').onchange = (e) => {
     const fn = e.target.files[0] ? e.target.files[0].name : "No file chosen";
@@ -1475,6 +1390,143 @@ const CitizenReporter = {
 
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit Public Report";
+    }
+};
+
+// ============================================================
+// PORTAL GATEWAY (UNIFIED LOGIN PORTAL)
+// ============================================================
+const PortalGateway = {
+    init() {
+        const loginModal = document.getElementById('loginModal');
+        const openBtn = document.getElementById('openLoginBtn');
+        const closeBtn = document.getElementById('loginModalClose');
+        const form = document.getElementById('unifiedLoginForm');
+        const tabs = document.querySelectorAll('.login-tab-btn');
+        
+        if (openBtn) openBtn.onclick = () => loginModal.classList.add('active');
+        if (closeBtn) closeBtn.onclick = () => loginModal.classList.remove('active');
+        
+        tabs.forEach(tab => {
+            tab.onclick = () => {
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.style.background = 'transparent';
+                    t.style.color = 'var(--text-secondary)';
+                });
+                tab.classList.add('active');
+                tab.style.background = 'var(--accent)';
+                tab.style.color = '#fff';
+                
+                const role = tab.dataset.role;
+                document.getElementById('loginRole').value = role;
+                document.getElementById('loginUsername').placeholder = `Username (${role})`;
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+            };
+        });
+        
+        if (form) {
+            form.onsubmit = (e) => this.handleLogin(e);
+        }
+        
+        const logoutBtn = document.getElementById('globalLogoutBtn');
+        if (logoutBtn) logoutBtn.onclick = () => this.handleLogout();
+    },
+    
+    async handleLogin(e) {
+        e.preventDefault();
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const role = document.getElementById('loginRole').value;
+        
+        const submitBtn = document.getElementById('loginSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Authenticating...";
+        
+        const res = await API.login(username, password);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign In";
+        
+        if (res && res.success && res.role === role) {
+            state.userRole = role;
+            document.getElementById('loginModal').classList.remove('active');
+            document.getElementById('openLoginBtn').style.display = 'none';
+            
+            const userPanel = document.getElementById('headerUserPanel');
+            const userRoleBadge = document.getElementById('headerUserRole');
+            userPanel.style.display = 'flex';
+            
+            if (role === 'admin') {
+                userRoleBadge.textContent = "🏛️ ADMIN";
+                userRoleBadge.style.color = '#00f5a0';
+                userRoleBadge.style.borderColor = 'rgba(0,245,160,0.2)';
+                userRoleBadge.style.background = 'rgba(0,245,160,0.05)';
+            } else if (role === 'customer') {
+                userRoleBadge.textContent = "🏢 CUSTOMER";
+                userRoleBadge.style.color = '#a855f7';
+                userRoleBadge.style.borderColor = 'rgba(168,85,247,0.2)';
+                userRoleBadge.style.background = 'rgba(168,85,247,0.05)';
+            } else {
+                userRoleBadge.textContent = "📱 WORKER";
+                userRoleBadge.style.color = '#f97316';
+                userRoleBadge.style.borderColor = 'rgba(249,115,22,0.2)';
+                userRoleBadge.style.background = 'rgba(249,115,22,0.05)';
+            }
+            
+            // Hide public pages
+            document.querySelector('.bun-hero').style.display = 'none';
+            document.getElementById('citizen-section').style.display = 'none';
+            document.getElementById('benchmark-section').style.display = 'none';
+            document.getElementById('gallery-section').style.display = 'none';
+            
+            // Show corresponding dashboard
+            if (role === 'admin') {
+                document.getElementById('admin-section').style.display = 'block';
+                App.syncWithServer();
+            } else if (role === 'customer') {
+                document.getElementById('customer-section').style.display = 'block';
+                CustomerPortal.loadCustomerStats();
+                state.map.on('dblclick', CustomerPortal.handleMapDoubleClick);
+            } else {
+                document.getElementById('worker-section').style.display = 'block';
+                App.syncWithServer();
+            }
+            
+            App.notify(`🔓 Authenticated successfully as ${role}`);
+        } else {
+            App.notify(`❌ Invalid credentials for role: ${role}`);
+        }
+    },
+    
+    handleLogout() {
+        const role = state.userRole;
+        state.userRole = null;
+        
+        // Hide dashboards
+        document.getElementById('admin-section').style.display = 'none';
+        document.getElementById('worker-section').style.display = 'none';
+        document.getElementById('customer-section').style.display = 'none';
+        
+        // Off double click if customer
+        if (role === 'customer' && state.map) {
+            state.map.off('dblclick', CustomerPortal.handleMapDoubleClick);
+        }
+        
+        // Restore public landing page
+        document.querySelector('.bun-hero').style.display = 'block';
+        document.getElementById('citizen-section').style.display = 'block';
+        document.getElementById('benchmark-section').style.display = 'block';
+        document.getElementById('gallery-section').style.display = 'block';
+        
+        // Restore header navbar
+        document.getElementById('headerUserPanel').style.display = 'none';
+        document.getElementById('openLoginBtn').style.display = 'inline-block';
+        
+        // Reset form inputs
+        document.getElementById('unifiedLoginForm').reset();
+        
+        App.notify("🔒 Session terminated.");
     }
 };
 
