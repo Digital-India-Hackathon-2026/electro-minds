@@ -1,0 +1,18 @@
+# Ignore the live database
+database.db
+database.db-journal
+database.db-wal
+database.db-shm
+
+# Ignore massive AI model files and datasets
+*.pt
+yolov8n.pt
+waste_dataset/
+
+# Ignore Python caches
+__pycache__/
+*.pyc
+
+# Ignore UI mockups or random testing files
+*.png
+*.jpg
