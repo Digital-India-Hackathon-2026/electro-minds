@@ -41,6 +41,13 @@
                 <div class="bun-nav-weather" id="weatherWidget" title="Delhi Weather Sync">
                     <span id="weatherIcon">☀️</span> <span id="weatherTemp">--°C</span>
                 </div>
+                <!-- Unified Sign In -->
+                <button class="bun-btn bun-btn-secondary" id="openLoginBtn" style="padding:6px 12px; font-weight:bold; font-size:10px;">🔐 Sign In</button>
+                <!-- Dashboard Mode Profile & Logout -->
+                <div id="headerUserPanel" style="display:none; align-items:center; gap:8px;">
+                    <span id="headerUserRole" style="font-size:9px; font-weight:800; color:#00f5a0; text-transform:uppercase; letter-spacing:0.5px; border:1px solid rgba(0,245,160,0.2); background:rgba(0,245,160,0.05); padding:2px 6px; border-radius:4px;">🏛️ Admin</span>
+                    <button class="bun-btn bun-btn-secondary" id="globalLogoutBtn" style="padding:4px 8px; font-size:9px; font-weight:bold;">Logout</button>
+                </div>
             </div>
         </div>
     </nav>
@@ -378,28 +385,13 @@
     <!-- ========================================== -->
     <!-- MUNICIPAL ADMIN SECTION (PORTAL 2)         -->
     <!-- ========================================== -->
-    <section class="bun-section dark-bg" id="admin-section">
+    <section class="bun-section dark-bg" id="admin-section" style="display:none;">
         <div class="section-container">
             <h2 class="section-title">Municipal Command Center</h2>
             <p class="section-desc">Dispatch crew dispatches, view outgoing Twilio SMS gateway logs, and trace collar history.</p>
 
-            <!-- Admin Lock State -->
-            <div class="auth-gate-wrapper" id="adminAuthGate">
-                <div class="gate-card">
-                    <span class="gate-icon">🔒</span>
-                    <h3>Authorization Required</h3>
-                    <p>Enter administrator credentials to view database alerts</p>
-                    
-                    <form id="adminLoginForm" class="gate-form">
-                        <input type="text" id="adminUsername" placeholder="Username (admin)" required>
-                        <input type="password" id="adminPassword" placeholder="Password (admin)" required>
-                        <button type="submit" class="bun-btn bun-btn-primary">Unlock Console</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Admin Console (Hidden by default until login) -->
-            <div class="admin-dashboard-wrap" id="adminDashboard" style="display:none;">
+            <!-- Admin Console -->
+            <div class="admin-dashboard-wrap" id="adminDashboard">
                 <div class="admin-meta-row">
                     <div class="admin-profile">
                         <span class="avatar">🏛️</span>
@@ -504,28 +496,13 @@
     <!-- ========================================== -->
     <!-- FIELD WORKER SECTION (PORTAL 3)            -->
     <!-- ========================================== -->
-    <section class="bun-section" id="worker-section">
+    <section class="bun-section" id="worker-section" style="display:none;">
         <div class="section-container">
             <h2 class="section-title">Field Worker Unit</h2>
             <p class="section-desc">Simulated worker mobile view. Access crew dispatches and upload cleanup proofs.</p>
 
-            <!-- Worker Lock State -->
-            <div class="auth-gate-wrapper" id="workerAuthGate">
-                <div class="gate-card">
-                    <span class="gate-icon">📱</span>
-                    <h3>Worker Authorization</h3>
-                    <p>Enter worker credentials to retrieve dispatches</p>
-                    
-                    <form id="workerLoginForm" class="gate-form">
-                        <input type="text" id="workerUsername" placeholder="Username (worker)" required>
-                        <input type="password" id="workerPassword" placeholder="Password (worker)" required>
-                        <button type="submit" class="bun-btn bun-btn-primary">Unlock Phone</button>
-                    </form>
-                </div>
-            </div>
-
             <!-- Worker Dashboard Phone Mockup -->
-            <div class="worker-dashboard-wrap" id="workerDashboard" style="display:none; justify-content:center;">
+            <div class="worker-dashboard-wrap" id="workerDashboard" style="display:flex; justify-content:center;">
                 <div class="phone-mockup">
                     <div class="phone-speaker"></div>
                     <div class="phone-screen">
@@ -576,28 +553,13 @@
     <!-- ========================================== -->
     <!-- COMMERCIAL CUSTOMER SECTION (PORTAL 4)     -->
     <!-- ========================================== -->
-    <section class="bun-section dark-bg" id="customer-section">
+    <section class="bun-section dark-bg" id="customer-section" style="display:none;">
         <div class="section-container">
             <h2 class="section-title">Commercial Customer Hub</h2>
             <p class="section-desc">Client analytics dashboard. View leased collar subscriptions, payment status, and order custom area sweeps.</p>
 
-            <!-- Customer Lock State -->
-            <div class="auth-gate-wrapper" id="customerAuthGate">
-                <div class="gate-card">
-                    <span class="gate-icon">👤</span>
-                    <h3>Customer Access</h3>
-                    <p>Enter customer credentials to manage property subscriptions</p>
-                    
-                    <form id="customerLoginForm" class="gate-form">
-                        <input type="text" id="customerUsername" placeholder="Username (customer)" required>
-                        <input type="password" id="customerPassword" placeholder="Password (customer)" required>
-                        <button type="submit" class="bun-btn bun-btn-primary">Unlock Client Hub</button>
-                    </form>
-                </div>
-            </div>
-
             <!-- Customer Dashboard -->
-            <div class="customer-dashboard-wrap" id="customerDashboard" style="display:none; flex-direction:column; gap:20px;">
+            <div class="customer-dashboard-wrap" id="customerDashboard" style="display:flex; flex-direction:column; gap:20px;">
                 <div class="admin-meta-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:16px;">
                     <div class="admin-profile" style="display:flex; gap:12px; align-items:center;">
                         <span class="avatar" style="font-size:24px;">🏢</span>
@@ -745,6 +707,36 @@
                 <button id="tourNextBtn" class="tour-nav-btn tour-nav-btn-next">Next →</button>
                 <button id="tourEndBtn" class="tour-nav-btn" style="display:none;">Finish</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ===== UNIFIED LOGIN MODAL ===== -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal" style="max-width:360px; padding:24px; background:rgba(12,12,14,0.98); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+            <div class="modal-header" style="border-bottom:none; padding-bottom:0; margin-bottom:12px;">
+                <h2 style="font-size:14px; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px;">Portal Gateway</h2>
+                <button class="modal-x" id="loginModalClose" style="color:var(--text-secondary);">&times;</button>
+            </div>
+            
+            <!-- Tab Selector -->
+            <div class="login-tabs" style="display:flex; background:#000; border:1px solid var(--border-color); border-radius:6px; padding:2px; margin-bottom:16px; gap:2px;">
+                <button type="button" class="login-tab-btn active" data-role="admin" style="flex:1; background:var(--accent); color:#fff; border:none; padding:6px 10px; font-size:10px; font-weight:bold; border-radius:4px; cursor:pointer; transition:all 0.2s;">Municipal</button>
+                <button type="button" class="login-tab-btn" data-role="customer" style="flex:1; background:transparent; color:var(--text-secondary); border:none; padding:6px 10px; font-size:10px; font-weight:bold; border-radius:4px; cursor:pointer; transition:all 0.2s;">Customer</button>
+                <button type="button" class="login-tab-btn" data-role="worker" style="flex:1; background:transparent; color:var(--text-secondary); border:none; padding:6px 10px; font-size:10px; font-weight:bold; border-radius:4px; cursor:pointer; transition:all 0.2s;">Worker</button>
+            </div>
+            
+            <form id="unifiedLoginForm" style="display:flex; flex-direction:column; gap:12px;">
+                <input type="hidden" id="loginRole" value="admin">
+                <div>
+                    <label style="font-size:9px; font-weight:bold; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:4px; letter-spacing:0.5px;">Username</label>
+                    <input type="text" id="loginUsername" class="bun-input" style="width:100%;" placeholder="Username (admin)" required>
+                </div>
+                <div>
+                    <label style="font-size:9px; font-weight:bold; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:4px; letter-spacing:0.5px;">Password</label>
+                    <input type="password" id="loginPassword" class="bun-input" style="width:100%;" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="bun-btn bun-btn-primary" style="width:100%; margin-top:8px; padding:8px;" id="loginSubmitBtn">Sign In</button>
+            </form>
         </div>
     </div>
 
