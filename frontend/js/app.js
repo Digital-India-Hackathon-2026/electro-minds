@@ -1426,6 +1426,49 @@ const PortalGateway = {
             };
         });
         
+        // Consolidated link redirections to trigger login modal
+        const switchTabAndOpen = (role) => {
+            loginModal.classList.add('active');
+            const targetTab = Array.from(tabs).find(t => t.dataset.role === role);
+            if (targetTab) {
+                targetTab.click(); // Updates placeholders, values, and styles
+            }
+        };
+
+        const navAdmin = document.getElementById('navAdminLink');
+        const navWorker = document.getElementById('navWorkerLink');
+        const heroAdminBtn = document.getElementById('heroAdminBtn');
+
+        if (navAdmin) {
+            navAdmin.addEventListener('click', (e) => {
+                if (!state.userRole) {
+                    e.preventDefault();
+                    switchTabAndOpen('admin');
+                    App.notify("🔐 Redirected to Municipal console login.");
+                }
+            });
+        }
+
+        if (navWorker) {
+            navWorker.addEventListener('click', (e) => {
+                if (!state.userRole) {
+                    e.preventDefault();
+                    switchTabAndOpen('worker');
+                    App.notify("🔐 Redirected to Worker portal login.");
+                }
+            });
+        }
+
+        if (heroAdminBtn) {
+            heroAdminBtn.addEventListener('click', (e) => {
+                if (!state.userRole) {
+                    e.preventDefault();
+                    switchTabAndOpen('admin');
+                    App.notify("🔐 Redirected to Municipal console login.");
+                }
+            });
+        }
+
         if (form) {
             form.onsubmit = (e) => this.handleLogin(e);
         }
